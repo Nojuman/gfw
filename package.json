@@ -15,7 +15,9 @@
     "lint": "eslint --ext js --ext jsx .",
     "precommit": "lint-staged",
     "generate": "plop --plopfile app/javascript/generators/plopfile.js component",
-    "generate:page": "plop --plopfile app/javascript/generators/plopfile.js page"
+    "generate:page": "plop --plopfile app/javascript/generators/plopfile.js page",
+    "styleguide": "styleguidist server",
+    "styleguide:build": "styleguidist build"
   },
   "repository": {
     "type": "git",
@@ -61,6 +63,7 @@
     "npm": "5.7.1",
     "npm-run-all": "4.0.2",
     "prettier": "1.8.1",
+    "react-styleguidist": "^6.5.3",
     "release": "3.1.6",
     "resolve-url-loader": "2.1.0",
     "sass-loader": "6.0.6",
