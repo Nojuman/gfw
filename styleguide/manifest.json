@@ -1,0 +1,5 @@
+{
+  "build/0.js": "/packs/build/0.js",
+  "main.css": "/packs/main.css",
+  "main.js": "/packs/build/main.bundle.js"
+}

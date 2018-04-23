@@ -1,7 +1,7 @@
 import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
-import './loader-styles.scss';
+import './styles.scss';
 import './themes/loader-light.scss'; // eslint-disable-line
 
 class Loader extends PureComponent {
