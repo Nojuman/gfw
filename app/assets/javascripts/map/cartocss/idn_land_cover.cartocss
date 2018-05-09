@@ -1,0 +1,106 @@
+/** simple visualization */
+
+#idn_land_cover{
+  polygon-opacity: 0.7;
+  polygon-fill:#FF0000;
+  line-color: #FFF;
+  line-width: 0.5;
+  line-opacity: 0.0;
+
+  // primary forest
+  [keterangan='Hutan Lahan Kering Primer']{
+  	polygon-fill:#0A633C;
+  }
+  // secondary forest
+  [keterangan='Hutan Lahan Kering Sekunder']{
+    polygon-fill:#149C61;
+  }
+  //primary mangrove forest
+  [keterangan='Hutan Mangrove Primer']{
+  	polygon-fill:#06ef9f;
+  }
+  //secondary mangrove forest
+  [keterangan='Hutan Mangrove Sekunder']{
+  	polygon-fill:#05c984;
+  }
+  // Industrial Plantation Forest
+  [keterangan='Hutan Tanaman Industri ( HTI )']{
+  	polygon-fill:#D9AA3B;
+  }
+  // Dryland farming - agriculture
+  [keterangan='Pertanian Lahan Kering']{
+  	polygon-fill:#FCF0A8;
+  }
+  // Dryland farm - mixed
+  [keterangan='Pertanian Lahan Kering Campur']{
+  	polygon-fill:#FCF0A8;
+  }
+  // Rice farming - mixed
+  [keterangan='Sawah']{
+  	polygon-fill:#FCF0A8;
+  }
+  //Plantation
+  [keterangan='Perkebunan']{
+  	polygon-fill:#EBBFC7;
+  }
+  //Forest Plantation
+  [keterangan='Hutan Tanaman']{
+  	polygon-fill:#EBBFC7;
+  }
+  //Grassland
+  [keterangan='Savana']{
+  	polygon-fill:#C5D68D;
+  }
+  //Shrub
+  [keterangan='Belukar']{
+   	polygon-fill:#4F6027;
+  }
+  //Savanna / Meadow
+  [keterangan='Savanna/ Padang rumput']{
+   	polygon-fill:#CFC28D;
+  }
+  //Swamps
+  [keterangan='Belukar Rawa']{
+  	polygon-fill:#b4be68;
+  }
+  //primary swamp forest
+  [keterangan='Hutan Rawa Primer']{
+  	polygon-fill:#b4be68;
+  }
+  //Swamp
+  [keterangan='Rawa']{
+  	polygon-fill:#b4be68;
+  }
+  // secondary swamp forest
+  [keterangan='Hutan Rawa Sekunder']{
+    polygon-fill:#898f4e;
+  }
+  //bare ground
+  [keterangan='Tanah Terbuka']{
+  	polygon-fill:#F5EEE7;
+  }
+  //Settlement
+  [keterangan='Pemukiman']{
+  	polygon-fill:#9A180F;
+  }
+  //airport/harbour
+  [keterangan='Bandara/ Pelabuhan']{
+  	polygon-fill:#9A180F;
+  }
+  //mining
+  [keterangan='Pertambangan']{
+  	polygon-fill:#FF3728;
+  }
+  //Fish pond
+  [keterangan='Tambak']{
+  	polygon-fill:#a3e7e2;
+  }
+  //water-body
+  [keterangan='Badan Air']{
+  	polygon-fill:#1284BE;
+  }
+  //Tansmigrasi (not sure what that is)
+  [keterangan='Transmigrasi']{
+  	polygon-fill:#D1D3D3;
+  }
+}
