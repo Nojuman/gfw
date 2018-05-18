@@ -6,7 +6,8 @@ import isEmpty from 'lodash/isEmpty';
 import camelCase from 'lodash/camelCase';
 import sortBy from 'lodash/sortBy';
 
-import indicators from 'data/indicators.json';
+import forestTypes from 'data/forest-types.json';
+import landCategories from 'data/land-categories.json';
 import thresholds from 'data/thresholds.json';
 import units from 'data/units.json';
 import periods from 'data/periods.json';
@@ -20,11 +21,16 @@ import * as WIDGETS from 'components/widgets/manifest';
 const getCountryData = state => state.countryData || null;
 const getCategory = state => state.category || null;
 const getLocation = state => state.payload || null;
-const getIndicatorWhitelist = state => state.indicatorWhitelist || null;
+const getWhitelist = state => state.whitelist || null;
 const getWidgetQuery = state => state.activeWidget || null;
+const getCountries = state => state.countries || null;
+const getRegions = state => state.regions || null;
+const getSubRegions = state => state.subRegions || null;
 
+// get all possible widget settings options
 const options = {
-  indicators,
+  forestTypes,
+  landCategories,
   thresholds,
   units,
   periods,
@@ -32,24 +38,6 @@ const options = {
   types,
   weeks
 };
-
-export const getAdminLevel = createSelector([getLocation], location => {
-  if (location.subRegion) return 'subRegion';
-  if (location.region) return 'region';
-  return 'country';
-});
-
-export const getAdminKey = createSelector([getLocation], location => {
-  if (location.subRegion) return 'subRegions';
-  if (location.region) return 'regions';
-  return 'countries';
-});
-
-export const getLocationOptions = createSelector(
-  [getAdminLevel, getCountryData],
-  (admin, countryData) =>
-    countryData[admin === 'country' ? 'regions' : 'subRegions']
-);
 
 export const getOptions = () => {
   const optionsMeta = {};
@@ -60,22 +48,91 @@ export const getOptions = () => {
   return optionsMeta;
 };
 
-// get lists selected
+// get location data for filtering widgets
+export const getAdminLevel = createSelector([getLocation], location => {
+  const { type, country, region, subRegion } = location;
+  if (subRegion) return 'subRegion';
+  if (region) return 'region';
+  if (country) return 'country';
+  return type || 'global';
+});
+
+export const getAdminKey = createSelector([getLocation], location => {
+  const { type, country, region, subRegion } = location;
+  if (subRegion) return 'subRegions';
+  if (region) return 'regions';
+  if (country) return 'countries';
+  return type || 'global';
+});
+
+export const getLocationOptions = createSelector(
+  [getAdminLevel, getCountryData],
+  (admin, countryData) =>
+    countryData[admin === 'country' ? 'regions' : 'subRegions'] ||
+    countryData.countries
+);
+
 export const getAdminSelected = createSelector(
-  [getAdminLevel, getAdminKey, getCountryData, getLocation],
-  (adminLevel, adminKey, locations, location) => {
-    const current = locations[adminKey].find(
-      i => i.value === location[adminLevel]
-    );
+  [
+    getCountries,
+    getRegions,
+    getSubRegions,
+    getLocation,
+    getAdminKey,
+    getAdminLevel
+  ],
+  (countries, regions, subRegions, location, adminKey, adminLevel) => {
+    const country =
+      (countries && countries.find(i => i.value === location.country)) || null;
+    const region =
+      (regions && regions.find(i => i.value === location.region)) || null;
+    const subRegion =
+      (subRegions && subRegions.find(i => i.value === location.subRegion)) ||
+      null;
+    const type = {
+      label: location.type || 'global',
+      value: location.type || 'global'
+    };
+
+    let current = type;
+    let parentLevel = null;
+    let parentKey = null;
+    let childLevel = 'country';
+    let childKey = 'countries';
+    if (location.subRegion) {
+      current = subRegion;
+      parentKey = 'regions';
+      parentLevel = 'region';
+    } else if (location.region) {
+      current = region;
+      parentKey = 'countries';
+      parentLevel = 'country';
+      childKey = 'subRegions';
+      childLevel = 'subRegion';
+    } else if (location.country) {
+      current = country;
+      parentKey = 'global';
+      childKey = 'regions';
+      childLevel = 'region';
+    }
+
     return {
+      type,
+      country,
+      region,
+      subRegion,
       ...current,
       adminKey,
-      adminLevel
+      adminLevel,
+      parentKey,
+      parentLevel,
+      childKey,
+      childLevel
     };
   }
 );
 
-// get lists selected
+// widget filters
 export const getWidgets = createSelector([], () =>
   Object.keys(WIDGETS).map(key => ({
     name: key,
@@ -83,8 +140,77 @@ export const getWidgets = createSelector([], () =>
   }))
 );
 
-export const filterWidgetsByCategory = createSelector(
-  [getWidgets, getCategory],
+export const checkWidgetAdminLevel = createSelector(
+  [getWidgets, getAdminLevel],
+  (widgets, adminLevel) =>
+    widgets.filter(w => w.config.admins.indexOf(adminLevel) > -1)
+);
+
+export const checkWidgetNeedsLocations = createSelector(
+  [
+    checkWidgetAdminLevel,
+    getLocationOptions,
+    getCountryData,
+    getLocation,
+    getAdminLevel
+  ],
+  (widgets, locations, countryData, location, adminLevel) => {
+    if (adminLevel === 'global') return widgets;
+    const { faoCountries } = countryData;
+    const isFaoCountry =
+      !!faoCountries.find(c => c.value === location.country) || null;
+
+    return widgets.filter(w => {
+      const { locationCheck, type, locationWhitelist } = w.config;
+      const needsLocations =
+        !locationCheck || (locations && locations.length > 1);
+      const locationWhitelistCheck =
+        !locationWhitelist || locationWhitelist.indexOf(location.country) > -1;
+      const faoLocationCheck = type !== 'fao' || isFaoCountry;
+
+      return needsLocations && locationWhitelistCheck && faoLocationCheck;
+    });
+  }
+);
+
+export const filterWidgetByIndicator = createSelector(
+  [checkWidgetNeedsLocations, getWhitelist, getAdminLevel],
+  (widgets, whitelist, admin) => {
+    if (!widgets) return null;
+    if (admin === 'global') return widgets;
+    const whitelistKeys = !isEmpty(whitelist) ? Object.keys(whitelist) : null;
+
+    return widgets.filter(widget => {
+      const { showIndicators } = widget.config;
+      let showByIndicators = true;
+      if (showIndicators && whitelist) {
+        const totalIndicators = concat(showIndicators, whitelistKeys).length;
+        const reducedIndicators = uniq(concat(showIndicators, whitelistKeys))
+          .length;
+        showByIndicators = totalIndicators !== reducedIndicators;
+      }
+      return showByIndicators;
+    });
+  }
+);
+
+export const checkWidgetHasData = createSelector(
+  [filterWidgetByIndicator, getWhitelist, getAdminLevel],
+  (widgets, whitelist, admin) => {
+    if (admin === 'global') return widgets;
+    return widgets.filter(w => {
+      const { type } = w.config;
+      return (
+        type !== 'loss' ||
+        type !== 'gain' ||
+        (whitelist && whitelist.gadm28 && whitelist.gadm28[type])
+      );
+    });
+  }
+);
+
+export const filterWidgets = createSelector(
+  [checkWidgetHasData, getCategory],
   (widgets, category) =>
     sortBy(
       widgets.filter(
@@ -92,65 +218,6 @@ export const filterWidgetsByCategory = createSelector(
       ),
       `config.sortOrder[${camelCase(category)}]`
     )
-);
-
-export const checkWidgetNeedsLocations = createSelector(
-  [
-    filterWidgetsByCategory,
-    getLocationOptions,
-    getCountryData,
-    getLocation,
-    getAdminLevel
-  ],
-  (widgets, locations, countryData, location, adminLevel) => {
-    if (isEmpty(locations)) return null;
-    const { faoCountries } = countryData;
-    const isFaoCountry =
-      !!faoCountries.find(c => c.value === location.country) || null;
-    return widgets.filter(
-      w =>
-        w.config.admins.indexOf(adminLevel) > -1 &&
-        (!w.config.locationCheck || locations.length > 1) &&
-        (w.config.type !== 'fao' || isFaoCountry) &&
-        (!w.config.customLocationWhitelist ||
-          w.config.customLocationWhitelist.indexOf(location.country) > -1)
-    );
-  }
-);
-
-export const filterWidgets = createSelector(
-  [checkWidgetNeedsLocations, getIndicatorWhitelist],
-  (widgets, whitelist) => {
-    if (!widgets) return null;
-    const whitelistKeys = !isEmpty(whitelist) ? Object.keys(whitelist) : null;
-
-    return widgets.filter(widget => {
-      // filter by showIndicators
-      let showByIndicators = true;
-      if (widget.config.showIndicators && whitelist) {
-        const totalIndicators = concat(
-          widget.config.showIndicators,
-          whitelistKeys
-        ).length;
-        const reducedIndicators = uniq(
-          concat(widget.config.showIndicators, whitelistKeys)
-        ).length;
-        showByIndicators = totalIndicators !== reducedIndicators;
-      }
-      // Then check if widget has data for gadm28 (loss or gain)
-      const type = widget.config.type;
-      const hasData =
-        !type ||
-        type === 'extent' ||
-        type === 'fao' ||
-        type === 'emissions' ||
-        type === 'plantations' ||
-        type === 'fires' ||
-        (whitelist && whitelist.gadm28 && whitelist.gadm28[type]);
-
-      return showByIndicators && hasData;
-    });
-  }
 );
 
 export const getActiveWidget = createSelector(

@@ -3,7 +3,7 @@ export const initialState = {
   config: {
     size: 'small',
     categories: ['land-cover'],
-    admins: ['country'],
+    admins: ['global', 'country'],
     type: 'fao',
     metaKey: 'widget_forest_cover_fao',
     sortOrder: {
@@ -11,6 +11,10 @@ export const initialState = {
     },
     colors: 'extent',
     sentences: {
+      globalInitial:
+        'FAO data from 2015 shows that there was {extent} of forest {location}, with Primary forest occupying {primaryPercent} of land area.',
+      globalNoPrimary:
+        'FAO data from 2015 shows that there was {extent} of forest {location}, which occupies {primaryPercent} of the country.',
       initial:
         'FAO data from 2015 shows that {location} contains {extent} of forest, with Primary forest occupying {primaryPercent} of the country.',
       noPrimary:

@@ -8,25 +8,23 @@ const getData = state => state.data;
 const getSettings = state => state.settings;
 const getCurrentLocation = state => state.currentLabel;
 const getIndicator = state => state.indicator || null;
-const getWhitelists = state => state.countryWhitelist;
+const getWhitelist = state => state.countryWhitelist;
 const getColors = state => state.colors;
 const getSentences = state => state.config && state.config.sentences;
 
 // get lists selected
 export const parseData = createSelector(
-  [getData, getSettings, getWhitelists, getColors],
+  [getData, getSettings, getWhitelist, getColors],
   (data, settings, whitelist, colors) => {
-    if (isEmpty(data) || isEmpty(whitelist)) return null;
+    if (isEmpty(data)) return null;
     const { totalArea, cover, plantations } = data;
     const { indicator } = settings;
-    const hasPlantations = Object.keys(whitelist).indexOf('plantations') > -1;
+    const hasPlantations =
+      isEmpty(whitelist) || whitelist.indexOf('plantations') > -1;
     const colorRange = getColorPalette(colors.ramp, hasPlantations ? 2 : 1);
     const parsedData = [
       {
-        label:
-          hasPlantations && indicator === 'gadm28'
-            ? 'Natural Forest'
-            : 'Tree cover',
+        label: hasPlantations && !indicator ? 'Natural Forest' : 'Tree cover',
         value: cover - plantations,
         color: colorRange[0],
         percentage: (cover - plantations) / totalArea * 100
@@ -38,7 +36,7 @@ export const parseData = createSelector(
         percentage: (totalArea - cover) / totalArea * 100
       }
     ];
-    if (indicator === 'gadm28' && hasPlantations) {
+    if (!indicator && hasPlantations) {
       parsedData.splice(1, 0, {
         label: 'Plantations',
         value: plantations,
@@ -54,20 +52,25 @@ export const getSentence = createSelector(
   [getData, getSettings, getCurrentLocation, getIndicator, getSentences],
   (data, settings, currentLabel, indicator, sentences) => {
     if (!data || !sentences) return null;
-    const { initial, withIndicator } = sentences;
+    const {
+      initial,
+      withIndicator,
+      globalInitial,
+      globalWithIndicator
+    } = sentences;
     const percentCover = 100 * data.cover / data.totalArea;
     const params = {
       year: settings.extentYear,
-      location: currentLabel,
-      indicator: indicator && indicator.label,
+      location: currentLabel || 'global',
+      indicator: indicator && indicator.label.toLowerCase(),
       percentage:
-        percentCover >= 0.1 ? `${format('.1f')(percentCover)}%` : '<0.1%',
+        percentCover >= 0.1 ? `${format('.2r')(percentCover)}%` : '<0.1%',
       value: `${format('.3s')(data.cover)}ha`
     };
-
-    return {
-      sentence: indicator ? withIndicator : initial,
-      params
-    };
+    let sentence = indicator ? withIndicator : initial;
+    if (!currentLabel) {
+      sentence = indicator ? globalWithIndicator : globalInitial;
+    }
+    return { sentence, params };
   }
 );

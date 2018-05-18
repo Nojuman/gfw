@@ -91,7 +91,7 @@ export const parseData = createSelector(
     const dataTrimmed = data.slice(trimStart, trimEnd);
     return dataTrimmed.map(d => {
       const locationData = meta && meta.find(l => d.id === l.value);
-      let path = '/country/';
+      let path = '/dashboards/country/';
       if (location.subRegion) {
         path += `${location.country}/${location.region}/${d.id}`;
       } else if (location.region) {
@@ -135,9 +135,9 @@ export const getSentence = createSelector(
       startYear,
       endYear,
       loss: loss ? `${format('.3s')(loss)}ha` : '0ha',
-      percent: areaPercent >= 0.1 ? `${format('.1f')(areaPercent)}%` : '<0.1%',
+      percent: areaPercent >= 0.1 ? `${format('.2r')(areaPercent)}%` : '<0.1%',
       globalPercent:
-        globalPercent >= 0.1 ? `${format('.1f')(globalPercent)}%` : '<0.1%',
+        globalPercent >= 0.1 ? `${format('.2r')(globalPercent)}%` : '<0.1%',
       extentYear: settings.extentYear
     };
 

@@ -10,12 +10,13 @@ import Component from './component';
 import * as Widgets from '../../manifest';
 import * as Selectors from './selectors';
 
-const mapStateToProps = ({ widgets }, ownProps) => {
+const mapStateToProps = ({ widgets, location }, ownProps) => {
   const { widget, colors, active, options } = ownProps;
-
+  const { query } = location;
+  const { country, region, subRegion, type } = location.payload;
   // widget consts
   const { config, settings } = widgets[widget];
-  const { getOptionsSelected } = Selectors;
+  const { getOptionsSelected, getIndicator } = Selectors;
   const highlightColor = colors.main || '#a0c746';
   const haveMapLayers = settings && !isEmpty(settings.layers);
   const onMap = active && haveMapLayers;
@@ -27,7 +28,8 @@ const mapStateToProps = ({ widgets }, ownProps) => {
   const selectorData = {
     ...ownProps,
     ...widgets[widget],
-    ...optionsSelected
+    ...optionsSelected,
+    indicator: optionsSelected && getIndicator({ ...optionsSelected })
   };
   const filteredOptions = {};
   if (config.selectors) {
@@ -39,6 +41,23 @@ const mapStateToProps = ({ widgets }, ownProps) => {
     });
   }
 
+  const category = query && query.category;
+  const locationUrl = `${country || ''}${region ? `/${region}` : ''}${
+    subRegion ? `/${subRegion}` : ''
+  }`;
+  const locationPath = `dashboards/${type || 'global'}/${locationUrl}`;
+  const widgetQuery = `widget=${widget}`;
+  const widgetState =
+    query && query[widget] ? `&${widget}=${query[widget]}` : '';
+  const categoryQuery = category ? `&category=${category}` : '';
+
+  const shareUrl = `${window.location.origin}/${locationPath}?${widgetQuery}${
+    widgetState ? `${widgetState}` : ''
+  }${categoryQuery}#${widget}`;
+  const embedUrl = `${window.location.origin}/embed/${locationPath}?${
+    widgetQuery
+  }${widgetState}`;
+
   return {
     ...Widgets[widget],
     ...selectorData,
@@ -48,7 +67,9 @@ const mapStateToProps = ({ widgets }, ownProps) => {
     haveMapLayers,
     parsedData: parseData && parseData(selectorData),
     parsedConfig: parseConfig && parseConfig(selectorData),
-    sentence: getSentence && getSentence(selectorData)
+    sentence: getSentence && getSentence(selectorData),
+    shareUrl,
+    embedUrl
   };
 };
 
@@ -60,20 +81,17 @@ class WidgetContainer extends PureComponent {
       getData,
       getWidgetData,
       widget,
-      data,
       geostore
     } = this.props;
-    if (isEmpty(data)) {
-      getWidgetData({
-        widget,
-        getData,
-        params: {
-          ...payload,
-          ...settings,
-          geostore
-        }
-      });
-    }
+    getWidgetData({
+      widget,
+      getData,
+      params: {
+        ...payload,
+        ...settings,
+        geostore
+      }
+    });
   }
 
   componentWillReceiveProps(nextProps) {
@@ -90,8 +108,10 @@ class WidgetContainer extends PureComponent {
       this.props.settings &&
       (!isEqual(payload, this.props.payload) ||
         !isEqual(settings.threshold, this.props.settings.threshold) ||
-        !isEqual(settings.indicator, this.props.settings.indicator) ||
+        !isEqual(settings.forestType, this.props.settings.forestType) ||
+        !isEqual(settings.landCategory, this.props.settings.landCategory) ||
         !isEqual(settings.extentYear, this.props.settings.extentYear) ||
+        !isEqual(settings.period, this.props.settings.period) ||
         !isEqual(settings.type, this.props.settings.type))
     ) {
       getWidgetData({
@@ -119,8 +139,7 @@ WidgetContainer.propTypes = {
   getData: PropTypes.func,
   getWidgetData: PropTypes.func,
   widget: PropTypes.string,
-  geostore: PropTypes.object,
-  data: PropTypes.oneOfType([PropTypes.object, PropTypes.array])
+  geostore: PropTypes.object
 };
 
 export default connect(mapStateToProps, null)(WidgetContainer);

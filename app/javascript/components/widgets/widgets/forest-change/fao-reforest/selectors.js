@@ -7,6 +7,7 @@ import { format } from 'd3-format';
 const getData = state => state.data || null;
 const getLocation = state => state.payload || null;
 const getColors = state => state.colors || null;
+const getCurrentLocation = state => state.currentLabel || null;
 const getSettings = state => state.settings || null;
 const getPeriod = state => state.period || null;
 const getSentences = state => state.config && state.config.sentences;
@@ -39,25 +40,44 @@ export const parseData = createSelector(
       ...d,
       label: d.name,
       color: colors.main,
-      path: `/country/${d.iso}`,
+      path: `/dashboards/country/${d.iso}`,
       value: d.rate
     }));
   }
 );
 
 export const getSentence = createSelector(
-  [parseData, getLocation, getSettings, getPeriod, getSentences],
-  (data, location, settings, period, sentences) => {
+  [
+    getSortedData,
+    parseData,
+    getLocation,
+    getSettings,
+    getPeriod,
+    getSentences,
+    getCurrentLocation
+  ],
+  (sortedData, data, location, settings, period, sentences, currentLabel) => {
     if (!data || !data.length) return null;
-    const { initial, noReforest } = sentences;
+    const { initial, noReforest, globalInitial } = sentences;
     const countryData = data.find(d => location.country === d.iso) || null;
 
-    const sentence = countryData.value > 0 ? initial : noReforest;
+    let globalRate = 0;
+    Object.keys(sortedData).forEach(k => {
+      globalRate += sortedData[k].rate;
+    });
+
+    let sentence = globalInitial;
+    if (currentLabel !== 'global') {
+      sentence = countryData && countryData.value > 0 ? initial : noReforest;
+    }
 
     const params = {
-      location: countryData.label,
+      location: currentLabel,
       year: period && period.label,
-      rate: `${format('.3s')(countryData.value)}ha/yr`
+      rate:
+        currentLabel === 'global'
+          ? `${format('.3s')(globalRate)}ha/yr`
+          : `${format('.3s')(countryData && countryData.value)}ha/yr`
     };
 
     return {

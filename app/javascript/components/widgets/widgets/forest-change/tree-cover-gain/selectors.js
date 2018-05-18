@@ -9,11 +9,15 @@ import { format } from 'd3-format';
 const getData = state => state.data || null;
 const getSettings = state => state.settings || null;
 const getLocation = state => state.payload || null;
-const getLocationsMeta = state => state[state.adminKey] || null;
+const getLocationsMeta = state =>
+  state[state.adminKey] || state.countries || null;
 const getColors = state => state.colors || null;
 const getIndicator = state => state.indicator || null;
 const getCurrentLocation = state => state.currentLocation || null;
+const getCurrentLabel = state => state.currentLabel || null;
+const getAdminLevel = state => state.adminLevel || null;
 const getSentences = state => state.config.sentences || null;
+const getParentLocation = state => state[state.parentLevel] || null;
 
 export const getSortedData = createSelector(
   [getData, getSettings],
@@ -41,10 +45,7 @@ export const parseData = createSelector(
   ],
   (data, settings, location, currentLocation, meta, colors) => {
     if (!data || !data.length) return null;
-    const locationIndex = findIndex(
-      data,
-      d => d.id === (currentLocation && currentLocation.value)
-    );
+    const locationIndex = findIndex(data, d => d.id === currentLocation.value);
     let trimStart = locationIndex - 2;
     let trimEnd = locationIndex + 3;
     if (locationIndex < 2) {
@@ -58,7 +59,7 @@ export const parseData = createSelector(
     const dataTrimmed = data.slice(trimStart, trimEnd);
     return dataTrimmed.map(d => {
       const locationData = meta && meta.find(l => d.id === l.value);
-      let path = '/country/';
+      let path = '/dashboards/country/';
       if (location.subRegion) {
         path += `${location.country}/${location.region}/${d.id}`;
       } else if (location.region) {
@@ -79,29 +80,61 @@ export const parseData = createSelector(
 );
 
 export const getSentence = createSelector(
-  [getSortedData, getSettings, getIndicator, getCurrentLocation, getSentences],
-  (data, settings, indicator, currentLocation, sentences) => {
+  [
+    getSortedData,
+    getSettings,
+    getIndicator,
+    getCurrentLocation,
+    getCurrentLabel,
+    getSentences,
+    getParentLocation,
+    getAdminLevel
+  ],
+  (
+    data,
+    settings,
+    indicator,
+    currentLocation,
+    currentLabel,
+    sentences,
+    parent,
+    adminLevel
+  ) => {
     if (!data || !data.length) return null;
-    const { initial, withIndicator } = sentences;
+    const {
+      initial,
+      withIndicator,
+      regionInitial,
+      regionWithIndicator,
+      globalInitial,
+      globalWithIndicator
+    } = sentences;
     const locationData =
       currentLocation && data.find(l => l.id === currentLocation.value);
-    const gain = locationData && locationData.gain;
-    const globalPercent = gain ? 100 * gain / sumBy(data, 'gain') : 0;
+    const gain = locationData ? locationData.gain : sumBy(data, 'gain');
+    const globalPercent = gain ? 100 * gain / sumBy(data, 'extent') : 0;
+    const gainPercent = gain ? 100 * gain / sumBy(data, 'gain') : 0;
     const areaPercent = (locationData && locationData.percentage) || 0;
-    const indicatorName = indicator ? indicator.label : 'region-wide';
 
     const params = {
-      location: currentLocation && currentLocation.label,
+      location: currentLabel === 'global' ? 'globally' : currentLabel,
       gain: `${format('.3s')(gain)}ha`,
-      indicator: indicatorName.toLowerCase(),
-      indicator_alt: indicatorName.toLowerCase(),
-      percent: areaPercent >= 0.1 ? `${format('.1f')(areaPercent)}%` : '<0.1%',
+      indicator: (indicator && indicator.label.toLowerCase()) || 'region-wide',
+      percent: areaPercent >= 0.1 ? `${format('.2r')(areaPercent)}%` : '<0.1%',
       globalPercent:
-        globalPercent >= 0.1 ? `${format('.1f')(globalPercent)}%` : '<0.1%',
-      extentYear: settings.extentYear
+        globalPercent >= 0.1 ? `${format('.2r')(globalPercent)}%` : '<0.1%',
+      gainPercent:
+        gainPercent >= 0.1 ? `${format('.2r')(gainPercent)}%` : '<0.1%',
+      extentYear: settings.extentYear,
+      parent: parent && parent.label
     };
 
-    const sentence = indicator ? withIndicator : initial;
+    let sentence = indicator ? withIndicator : initial;
+    if (adminLevel === 'region' || adminLevel === 'subRegion') {
+      sentence = indicator ? regionWithIndicator : regionInitial;
+    } else if (adminLevel === 'global' || adminLevel === 'subRegion') {
+      sentence = indicator ? globalWithIndicator : globalInitial;
+    }
 
     return {
       sentence,

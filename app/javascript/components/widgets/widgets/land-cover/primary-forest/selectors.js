@@ -8,15 +8,14 @@ const getData = state => state.data;
 const getSettings = state => state.settings;
 const getCurrentLocation = state => state.currentLabel;
 const getIndicator = state => state.indicator || null;
-const getIndicatorWhitelist = state => state.countryWhitelist;
 const getColors = state => state.colors;
 const getSentences = state => state.config && state.config.sentences;
 
 // get lists selected
 export const parseData = createSelector(
-  [getData, getSettings, getIndicatorWhitelist, getColors],
-  (data, settings, whitelist, colors) => {
-    if (isEmpty(data) || isEmpty(whitelist)) return null;
+  [getData, getSettings, getColors],
+  (data, settings, colors) => {
+    if (isEmpty(data)) return null;
     const { totalArea, totalExtent, extent } = data;
     const colorRange = getColorPalette(colors.ramp, 2);
     const secondaryExtent = totalExtent - extent < 0 ? 0 : totalExtent - extent;
@@ -47,7 +46,7 @@ export const parseData = createSelector(
 export const getSentence = createSelector(
   [parseData, getSettings, getCurrentLocation, getIndicator, getSentences],
   (parsedData, settings, currentLabel, indicator, sentences) => {
-    if (!parsedData || !currentLabel || !indicator) return null;
+    if (!parsedData || !currentLabel) return null;
     const { initial, withIndicator } = sentences;
     const totalExtent = parsedData
       .filter(d => d.label !== 'Non-Forest')
@@ -58,8 +57,8 @@ export const getSentence = createSelector(
       totalExtent *
       100;
 
-    let indicatorLabel = indicator.label;
-    switch (indicator.value) {
+    let indicatorLabel = indicator && indicator.label;
+    switch (indicator && indicator.value) {
       case 'primary_forest__mining':
         indicatorLabel = 'Mining concessions';
         break;
@@ -79,13 +78,15 @@ export const getSentence = createSelector(
       percentage:
         primaryPercentage < 0.1
           ? '<0.1%'
-          : `${format('.0f')(primaryPercentage)}%`,
+          : `${format('.2r')(primaryPercentage)}%`,
       primary: 'primary forest',
       extentYear: settings.extentYear
     };
 
     const sentence =
-      indicator.value === 'primary_forest' ? initial : withIndicator;
+      indicator && indicator.value === 'primary_forest'
+        ? initial
+        : withIndicator;
 
     return {
       sentence,

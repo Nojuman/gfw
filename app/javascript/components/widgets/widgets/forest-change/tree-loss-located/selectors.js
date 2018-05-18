@@ -37,7 +37,7 @@ export const mapData = createSelector(
         loss,
         percentage,
         value: settings.unit === 'ha' ? loss : percentage,
-        path: `/country/${location.country}/${
+        path: `/dashboards/country/${location.country}/${
           location.region ? `${location.region}/` : ''
         }${d.id}`
       };
@@ -110,20 +110,20 @@ export const getSentence = createSelector(
     }
 
     const params = {
-      indicator: indicator && indicator.label,
+      indicator: indicator && indicator.label.toLowerCase(),
       location: currentLabel,
       startYear,
       endYear,
-      topLoss: `${format('.0f')(topLoss)}%`,
+      topLoss: `${format('.2r')(topLoss)}%`,
       percentileLength,
       region: percentileLength > 1 ? topRegion.label : 'This region',
       value:
         topRegion.percentage > 1 && settings.unit === '%'
-          ? `${format('.0f')(topRegion.percentage)}%`
+          ? `${format('.2r')(topRegion.percentage)}%`
           : `${format('.3s')(topRegion.loss)}ha`,
       average:
         topRegion.percentage > 1 && settings.unit === '%'
-          ? `${format('.0f')(avgLossPercentage)}%`
+          ? `${format('.2r')(avgLossPercentage)}%`
           : `${format('.3s')(avgLoss)}ha`
     };
 

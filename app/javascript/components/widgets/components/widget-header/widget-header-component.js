@@ -2,7 +2,7 @@ import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import { Tooltip } from 'react-tippy';
 import isEmpty from 'lodash/isEmpty';
-import { COUNTRY } from 'pages/country/router';
+import { COUNTRY } from 'pages/dashboards/router';
 
 import Button from 'components/ui/button';
 import Icon from 'components/ui/icon';
@@ -28,7 +28,7 @@ class WidgetHeader extends PureComponent {
       title,
       settings,
       options,
-      currentLocation,
+      currentLabel,
       modalClosing,
       widget,
       location,
@@ -49,9 +49,7 @@ class WidgetHeader extends PureComponent {
 
     return (
       <div className="c-widget-header">
-        <div className="title">{`${title} in ${
-          currentLocation ? currentLocation.label : ''
-        }`}</div>
+        <div className="title">{title}</div>
         <div className="options">
           {!embed &&
             haveMapLayers && (
@@ -70,9 +68,7 @@ class WidgetHeader extends PureComponent {
                 }}
                 trackingData={{
                   title: 'map-button',
-                  widget: `${title} in ${
-                    currentLocation ? currentLocation.label : ''
-                  }`
+                  widget: `${title} in ${currentLabel || ''}`
                 }}
                 onClick={() => setShowMapMobile(true)}
                 tooltip={
@@ -130,9 +126,7 @@ class WidgetHeader extends PureComponent {
                   }}
                   trackingData={{
                     event: 'open-settings',
-                    label: `${title} in ${
-                      currentLocation ? currentLocation.label : ''
-                    }`
+                    label: `${title} in ${currentLabel || ''}`
                   }}
                 >
                   <Icon icon={settingsIcon} className="settings-icon" />
@@ -189,7 +183,7 @@ WidgetHeader.propTypes = {
   title: PropTypes.string.isRequired,
   settings: PropTypes.object,
   options: PropTypes.object,
-  currentLocation: PropTypes.object,
+  currentLabel: PropTypes.string,
   location: PropTypes.object,
   query: PropTypes.object,
   embed: PropTypes.bool,
@@ -204,8 +198,7 @@ WidgetHeader.propTypes = {
   modalOpen: PropTypes.bool,
   modalClosing: PropTypes.bool,
   active: PropTypes.bool,
-  citation: PropTypes.string,
-  whitelist: PropTypes.object
+  citation: PropTypes.string
 };
 
 export default WidgetHeader;
