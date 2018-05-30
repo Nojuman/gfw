@@ -14,13 +14,14 @@ const getSentences = state => state.config && state.config.sentences;
 
 // get lists selected
 export const parseData = createSelector(
-  [getData, getSettings, getWhitelist, getColors],
-  (data, settings, whitelist, colors) => {
+  [getData, getSettings, getWhitelist, getColors, getCurrentLocation],
+  (data, settings, whitelist, colors, currentLabel) => {
     if (isEmpty(data)) return null;
     const { totalArea, cover, plantations } = data;
     const { indicator } = settings;
     const hasPlantations =
-      isEmpty(whitelist) || whitelist.indexOf('plantations') > -1;
+      (currentLabel !== 'global' && isEmpty(whitelist)) ||
+      whitelist.indexOf('plantations') > -1;
     const colorRange = getColorPalette(colors.ramp, hasPlantations ? 2 : 1);
     const parsedData = [
       {
@@ -68,7 +69,7 @@ export const getSentence = createSelector(
       value: `${format('.3s')(data.cover)}ha`
     };
     let sentence = indicator ? withIndicator : initial;
-    if (!currentLabel) {
+    if (currentLabel === 'global') {
       sentence = indicator ? globalWithIndicator : globalInitial;
     }
     return { sentence, params };
