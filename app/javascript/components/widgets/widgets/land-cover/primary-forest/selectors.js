@@ -48,28 +48,22 @@ export const getSentence = createSelector(
   (parsedData, settings, currentLabel, indicator, sentences) => {
     if (!parsedData || !currentLabel) return null;
     const { initial, withIndicator } = sentences;
-    const totalExtent = parsedData
-      .filter(d => d.label !== 'Non-Forest')
-      .map(d => d.value)
-      .reduce((sum, d) => sum + d);
-    const primaryPercentage =
-      parsedData.find(d => d.label === 'Primary Forest').value /
-      totalExtent *
-      100;
+    const primaryPercentage = parsedData.find(d => d.label === 'Primary Forest')
+      .percentage;
 
     let indicatorLabel = indicator && indicator.label;
     switch (indicator && indicator.value) {
       case 'primary_forest__mining':
-        indicatorLabel = 'Mining concessions';
+        indicatorLabel = 'mining concessions';
         break;
       case 'primary_forest__landmark':
-        indicatorLabel = 'Indigenous lands';
+        indicatorLabel = 'indigenous lands';
         break;
       case 'primary_forest__wdpa':
-        indicatorLabel = 'Protected areas';
+        indicatorLabel = 'protected areas';
         break;
       default:
-        indicatorLabel = 'Primary forests';
+        indicatorLabel = 'primary forests';
     }
 
     const params = {
@@ -79,7 +73,6 @@ export const getSentence = createSelector(
         primaryPercentage < 0.1
           ? '<0.1%'
           : `${format('.2r')(primaryPercentage)}%`,
-      primary: 'primary forest',
       extentYear: settings.extentYear
     };
 
