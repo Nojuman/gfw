@@ -48,7 +48,8 @@ export const getSentence = createSelector(
     }
     if (isEmpty(data) || isEmpty(locationNames)) return {};
     const { initial, withLoss, withPlantationLoss } = sentences;
-    const extent = format('.3s')(data.extent);
+    const extent =
+      data.extent < 1 ? format('.3r')(data.extent) : format('.3s')(data.extent);
     const percentageCover = format('.1f')(data.extent / data.totalArea * 100);
     const lossWithOutPlantations = format('.2s')(
       data.totalLoss.area - (data.plantationsLoss.area || 0)
@@ -71,7 +72,8 @@ export const getSentence = createSelector(
 
     let sentence = initial;
     if (data.extent > 0 && data.totalLoss.area && data.plantationsLoss.area) {
-      sentence = data.plantationsLoss.area ? withPlantationLoss : withLoss;
+      sentence =
+        data.plantationsLoss.area && location ? withPlantationLoss : withLoss;
     }
 
     return {
