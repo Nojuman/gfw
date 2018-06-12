@@ -1,7 +1,7 @@
 class DashboardsController < ApplicationController
 
   layout 'application_react'
-  before_action :set_title, only: [:index, :embed]
+  before_action :check_water_bodies, :set_title, only: [:index, :embed]
 
   def index
     @title = @location && @location["name"] || @location
@@ -22,6 +22,15 @@ class DashboardsController < ApplicationController
   end
 
   private
+
+  def check_water_bodies
+    if params[:sub_region]
+      if Dashboards.is_water_body(params[:iso], params[:region], params[:sub_region])
+        redirect_to action: "index", type: 'global'
+      end
+    end
+    return false
+  end
 
   def set_title
     @location = params[:iso] ? Dashboards.find_country_by_iso(params[:iso]) : "#{params[:type] && params[:type].capitalize || 'Global'} Dashboard"

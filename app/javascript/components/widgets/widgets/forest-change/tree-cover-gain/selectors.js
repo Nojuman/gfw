@@ -5,7 +5,7 @@ import findIndex from 'lodash/findIndex';
 import { sortByKey } from 'utils/data';
 import { format } from 'd3-format';
 
-import { getAdminPath } from '../../../utils';
+import { getAdminPath, getRankedData } from '../../../utils';
 
 // get list data
 const getData = state => state.data || null;
@@ -30,10 +30,7 @@ export const getSortedData = createSelector(
       uniqBy(data, 'id'),
       settings.unit === 'ha' ? 'gain' : 'percentage',
       true
-    ).map((d, i) => ({
-      ...d,
-      rank: i + 1
-    }));
+    );
   }
 );
 
@@ -49,40 +46,25 @@ export const parseData = createSelector(
   ],
   (data, settings, location, query, currentLocation, meta, colors) => {
     if (!data || !data.length) return null;
-    let dataTrimmed = data;
-    if (location.country) {
-      const locationIndex = findIndex(
-        data,
-        d => d.id === currentLocation.value
-      );
-      let trimStart = locationIndex - 2;
-      let trimEnd = locationIndex + 3;
-      if (locationIndex < 2) {
-        trimStart = 0;
-        trimEnd = 5;
-      }
-      if (locationIndex > data.length - 3) {
-        trimStart = data.length - 5;
-        trimEnd = data.length;
-      }
-      dataTrimmed = data.slice(trimStart, trimEnd);
-    }
-    return dataTrimmed.map(d => {
-      const locationData = meta && meta.find(l => d.id === l.value);
-
-      return {
-        ...d,
-        label: (locationData && locationData.label) || '',
-        color: colors.main,
-        path: getAdminPath({
-          ...location,
-          country: location.region && location.country,
-          query,
-          id: d.id
-        }),
-        value: settings.unit === 'ha' ? d.gain : d.percentage
-      };
+    const dataTrimmed = getRankedData({
+      data,
+      meta,
+      location,
+      indexValue: currentLocation.value,
+      trim: 5
     });
+    console.log(dataTrimmed);
+    return dataTrimmed.map(d => ({
+      ...d,
+      color: colors.main,
+      path: getAdminPath({
+        ...location,
+        country: location.region && location.country,
+        query,
+        id: d.id
+      }),
+      value: settings.unit === 'ha' ? d.gain : d.percentage
+    }));
   }
 );
 
